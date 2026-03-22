@@ -25,6 +25,7 @@ import com.shuzijun.leetcode.plugin.model.LeetcodeEditor;
 import com.shuzijun.leetcode.plugin.model.PluginConstant;
 import com.shuzijun.leetcode.plugin.model.Question;
 import com.shuzijun.leetcode.plugin.model.Submission;
+import com.shuzijun.leetcode.plugin.setting.ProjectConfig;
 import com.shuzijun.leetcode.plugin.utils.FileEditorProviderReflection;
 import com.shuzijun.leetcode.plugin.window.dialog.SubmissionsPanel;
 import org.apache.commons.collections.CollectionUtils;
@@ -76,7 +77,8 @@ public class SubmissionsPreview extends UserDataHolderBase implements FileEditor
         settingsConnection.subscribe(QuestionSubmitNotifier.TOPIC, new QuestionSubmitNotifier() {
             @Override
             public void submit(String host, String slug) {
-                if (leetcodeEditor.getTitleSlug().equals(slug) && leetcodeEditor.getHost().equals(host)) {
+                LeetcodeEditor currentEditor = getCurrentEditor();
+                if (currentEditor.getTitleSlug().equals(slug) && currentEditor.getHost().equals(host)) {
                     if (isLoad) {
                         initComponent(null);
                     }
@@ -106,7 +108,8 @@ public class SubmissionsPreview extends UserDataHolderBase implements FileEditor
             JBLabel loadingLabel = new JBLabel("Loading......");
             mySplitter.setFirstComponent(loadingLabel);
             try {
-                question = QuestionManager.getQuestionByTitleSlug(leetcodeEditor.getTitleSlug(), project);
+                LeetcodeEditor currentEditor = getCurrentEditor();
+                question = QuestionManager.getQuestionByTitleSlug(currentEditor.getTitleSlug(), project);
 
                 if (question == null) {
                     mySplitter.setFirstComponent(new JBLabel("No question"));
@@ -273,6 +276,11 @@ public class SubmissionsPreview extends UserDataHolderBase implements FileEditor
                     isLoad = false;
                 }
             }
+        } else if (state instanceof ConvergePreview.RefreshState) {
+            resetState();
+            if (((ConvergePreview.RefreshState) state).isSelect()) {
+                initComponent(null);
+            }
         }
     }
 
@@ -315,5 +323,26 @@ public class SubmissionsPreview extends UserDataHolderBase implements FileEditor
         } else {
             return null;
         }
+    }
+
+    private void resetState() {
+        isLoad = false;
+        question = null;
+        submissionList = null;
+        table = null;
+        myLayout = SplitFileEditor.SplitEditorLayout.FIRST;
+        if (fileEditor != null) {
+            Disposer.dispose(fileEditor);
+            fileEditor = null;
+        }
+        if (mySplitter != null) {
+            mySplitter.setFirstComponent(null);
+            mySplitter.setSecondComponent(null);
+        }
+    }
+
+    private LeetcodeEditor getCurrentEditor() {
+        LeetcodeEditor currentEditor = ProjectConfig.getInstance(project).getEditor(leetcodeEditor.getPath());
+        return currentEditor == null ? leetcodeEditor : currentEditor;
     }
 }

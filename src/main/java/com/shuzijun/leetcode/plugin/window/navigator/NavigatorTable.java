@@ -104,7 +104,7 @@ public class NavigatorTable extends NavigatorTableData<QuestionView> {
             protected void prepareRenderer(Component component, Object value, int row, int column) {
 
                 if (component instanceof JLabel) {
-                    if (column == 0 || column == 2 || column == 3 || column == 4) {
+                    if (column == 0 || column == 2 || column == 3) {
                         ((JLabel) component).setHorizontalAlignment(SwingConstants.CENTER);
                     } else {
                         ((JLabel) component).setHorizontalAlignment(SwingConstants.LEADING);
@@ -140,7 +140,7 @@ public class NavigatorTable extends NavigatorTableData<QuestionView> {
 
     @Override
     protected MyTableModel<QuestionView> createMyTableModel() {
-        return new MyTableModel<QuestionView>(new String[]{"Status", "Title", "Acceptance", "Difficulty", "Frequency"}, new String[]{"S", "Title", "AC", "DD", "F"}) {
+        return new MyTableModel<QuestionView>(new String[]{"Status", "Title", "Acceptance", "Difficulty"}, new String[]{"S", "Title", "AC", "DD"}) {
             @Override
             public Object getValue(QuestionView question, int columnIndex) {
                 if (columnIndex == 0) {
@@ -166,9 +166,6 @@ public class NavigatorTable extends NavigatorTableData<QuestionView> {
                         return level;
                     }
                 }
-                if (columnIndex == 4) {
-                    return nf.format(question.getFrequency());
-                }
                 return null;
             }
         };
@@ -183,7 +180,6 @@ public class NavigatorTable extends NavigatorTableData<QuestionView> {
         myJBTable.getColumnModel().getColumn(0).setMaxWidth(30);
         myJBTable.getColumnModel().getColumn(2).setMaxWidth(60);
         myJBTable.getColumnModel().getColumn(3).setMaxWidth(70);
-        myJBTable.getColumnModel().getColumn(4).setMaxWidth(60);
     }
 
 }

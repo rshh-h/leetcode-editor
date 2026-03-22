@@ -123,7 +123,16 @@ public class ConvergePreview extends UserDataHolderBase implements TextEditor {
                     }
                 }
             }
+        } else if (state instanceof RefreshState) {
+            for (int i = 0; i < names.length; i++) {
+                boolean select = jbEditorTabs != null && tabInfos[i] == jbEditorTabs.getSelectedInfo();
+                fileEditors[i].setState(RefreshState.getState(select));
+            }
         }
+    }
+
+    public void refreshTabs() {
+        setState(RefreshState.NotSelect);
     }
 
     @Override
@@ -276,6 +285,31 @@ public class ConvergePreview extends UserDataHolderBase implements TextEditor {
             return false;
         }
 
+    }
+
+    public static class RefreshState implements FileEditorState {
+
+        public static RefreshState Select = new RefreshState(true);
+        public static RefreshState NotSelect = new RefreshState(false);
+
+        private final boolean select;
+
+        public static RefreshState getState(boolean select) {
+            return select ? Select : NotSelect;
+        }
+
+        private RefreshState(boolean select) {
+            this.select = select;
+        }
+
+        public boolean isSelect() {
+            return select;
+        }
+
+        @Override
+        public boolean canBeMergedWith(@NotNull FileEditorState otherState, @NotNull FileEditorStateLevel level) {
+            return false;
+        }
     }
 
 }

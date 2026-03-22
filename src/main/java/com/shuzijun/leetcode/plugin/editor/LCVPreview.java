@@ -56,26 +56,7 @@ public class LCVPreview extends UserDataHolderBase implements FileEditor {
         if (myHtmlPanelWrapper == null) {
             myHtmlPanelWrapper = JBUI.Panels.simplePanel();
             isPresentableUrl = myProject.getPresentableUrl() != null;
-
-            JBLabel loadingLabel = new JBLabel("Loading......");
-            myHtmlPanelWrapper.addToCenter(loadingLabel);
-            String url = UrlEscapers.urlFragmentEscaper().escape(URLUtil.FILE_PROTOCOL + URLUtil.SCHEME_SEPARATOR + FileUtils.separator() + myFile.getPath());
-            LCVPanel tempPanel = null;
-            try {
-                try {
-                    tempPanel = new LCVPanel(url, myProject, myDocument.getText());
-                } catch (IllegalArgumentException e) {
-                    tempPanel = new LCVPanel(url, myProject, myDocument.getText(), true);
-                }
-                myHtmlPanelWrapper.addToCenter(tempPanel.getComponent());
-
-            } catch (Throwable e) {
-                myHtmlPanelWrapper.addToCenter(new JBLabel("<html><body>Your environment does not support JCEF.<br>Check the Registry 'ide.browser.jcef.enabled'.<br>" + e.getMessage() + "<body></html>"));
-            } finally {
-                myPanel = tempPanel;
-                myHtmlPanelWrapper.remove(loadingLabel);
-                myHtmlPanelWrapper.repaint();
-            }
+            renderPreview();
         }
 
         return myHtmlPanelWrapper;
@@ -93,6 +74,9 @@ public class LCVPreview extends UserDataHolderBase implements FileEditor {
 
     @Override
     public void setState(@NotNull FileEditorState state) {
+        if (state instanceof ConvergePreview.RefreshState) {
+            ApplicationManager.getApplication().invokeLater(this::reloadPreview);
+        }
     }
 
     @Override
@@ -130,6 +114,42 @@ public class LCVPreview extends UserDataHolderBase implements FileEditor {
     @Override
     public @Nullable VirtualFile getFile() {
         return myFile;
+    }
+
+    private void reloadPreview() {
+        if (myHtmlPanelWrapper == null) {
+            return;
+        }
+        if (myPanel != null) {
+            Disposer.dispose(myPanel);
+            myPanel = null;
+        }
+        myHtmlPanelWrapper.removeAll();
+        renderPreview();
+        myHtmlPanelWrapper.revalidate();
+        myHtmlPanelWrapper.repaint();
+    }
+
+    private void renderPreview() {
+        JBLabel loadingLabel = new JBLabel("Loading......");
+        myHtmlPanelWrapper.addToCenter(loadingLabel);
+        String url = UrlEscapers.urlFragmentEscaper().escape(URLUtil.FILE_PROTOCOL + URLUtil.SCHEME_SEPARATOR + FileUtils.separator() + myFile.getPath());
+        LCVPanel tempPanel = null;
+        try {
+            try {
+                tempPanel = new LCVPanel(url, myProject, myDocument.getText());
+            } catch (IllegalArgumentException e) {
+                tempPanel = new LCVPanel(url, myProject, myDocument.getText(), true);
+            }
+            myHtmlPanelWrapper.addToCenter(tempPanel.getComponent());
+
+        } catch (Throwable e) {
+            myHtmlPanelWrapper.addToCenter(new JBLabel("<html><body>Your environment does not support JCEF.<br>Check the Registry 'ide.browser.jcef.enabled'.<br>" + e.getMessage() + "<body></html>"));
+        } finally {
+            myPanel = tempPanel;
+            myHtmlPanelWrapper.remove(loadingLabel);
+            myHtmlPanelWrapper.repaint();
+        }
     }
 
 }

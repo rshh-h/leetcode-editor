@@ -14,6 +14,8 @@ public class VelocityUtils {
 
     private static String VM_LOG_TAG = "Leetcode VelocityUtils";
     private static String VM_CONTEXT = "question";
+    private static final String[] DIRECTIVES_WITH_ARGUMENTS = {"if", "set", "foreach", "parse", "include", "macro", "define", "evaluate", "elseif"};
+    private static final String[] DIRECTIVES_WITHOUT_ARGUMENTS = {"else", "end", "break", "stop"};
     private static VelocityEngine engine;
 
 
@@ -38,10 +40,68 @@ public class VelocityUtils {
         velocityContext.put(VM_CONTEXT, data);
         velocityContext.put("velocityTool", new VelocityTool());
         velocityContext.put("vt", new VelocityTool());
-        boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, template);
+        boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, escapeLiteralHashes(template));
         if (!isSuccess) {
 
         }
         return writer.toString();
+    }
+
+    private static String escapeLiteralHashes(String template) {
+        if (template == null || template.isEmpty()) {
+            return template;
+        }
+
+        StringBuilder escaped = new StringBuilder(template.length());
+        for (int i = 0; i < template.length(); i++) {
+            char current = template.charAt(i);
+            if (current == '#' && !isEscaped(template, i) && !isVelocityDirective(template, i)) {
+                escaped.append('\\');
+            }
+            escaped.append(current);
+        }
+        return escaped.toString();
+    }
+
+    private static boolean isEscaped(String template, int index) {
+        int slashCount = 0;
+        for (int i = index - 1; i >= 0 && template.charAt(i) == '\\'; i--) {
+            slashCount++;
+        }
+        return slashCount % 2 == 1;
+    }
+
+    private static boolean isVelocityDirective(String template, int index) {
+        if (template.startsWith("##", index) || template.startsWith("#*", index)) {
+            return true;
+        }
+
+        int directiveStart = index + 1;
+        for (String directive : DIRECTIVES_WITH_ARGUMENTS) {
+            if (template.startsWith(directive, directiveStart)) {
+                int position = directiveStart + directive.length();
+                while (position < template.length() && Character.isWhitespace(template.charAt(position))) {
+                    position++;
+                }
+                if (position < template.length() && template.charAt(position) == '(') {
+                    return true;
+                }
+            }
+        }
+
+        for (String directive : DIRECTIVES_WITHOUT_ARGUMENTS) {
+            if (template.startsWith(directive, directiveStart)) {
+                int position = directiveStart + directive.length();
+                if (position >= template.length()) {
+                    return true;
+                }
+                char next = template.charAt(position);
+                if (!Character.isLetterOrDigit(next) && next != '_') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

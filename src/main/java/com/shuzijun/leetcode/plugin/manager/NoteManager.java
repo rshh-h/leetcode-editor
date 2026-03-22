@@ -23,11 +23,21 @@ public class NoteManager {
 
 
     public static File show(String titleSlug, Project project, Boolean isOpenEditor) {
+        return show(titleSlug, project, isOpenEditor, false);
+    }
+
+    public static File show(String titleSlug, Project project, Boolean isOpenEditor, Boolean refresh) {
         Config config = PersistentConfig.getInstance().getConfig();
         Question question = QuestionManager.getQuestionByTitleSlug(titleSlug, project);
         String filePath = PersistentConfig.getInstance().getTempFilePath() + Constant.DOC_NOTE + VelocityUtils.convert(config.getCustomFileName(), question) + ".md";
         File file = new File(filePath);
-        if (file.exists()) {
+        if (Boolean.TRUE.equals(refresh)) {
+            if (pull(titleSlug, project)) {
+                if (isOpenEditor) {
+                    FileUtils.openFileEditor(file, project);
+                }
+            }
+        } else if (file.exists()) {
             if (isOpenEditor) {
                 FileUtils.openFileEditor(file, project);
             }

@@ -3,10 +3,16 @@ package com.shuzijun.leetcode.plugin.manager;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Joiner;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.fileEditor.FileEditor;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.shuzijun.leetcode.plugin.editor.ConvergePreview;
+import com.shuzijun.leetcode.plugin.editor.QuestionEditorWithPreview;
 import com.shuzijun.leetcode.plugin.listener.QuestionStatusNotifier;
 import com.shuzijun.leetcode.plugin.listener.QuestionSubmitNotifier;
 import com.shuzijun.leetcode.plugin.model.*;
@@ -44,19 +50,15 @@ public class CodeManager {
 
         File file = new File(filePath);
         BiConsumer<LeetcodeEditor, String> fillPath = (e, s) -> e.setPath(s);
-        if (file.exists()) {
+        String content = question.getContent();
+        try {
+            question.setLangSlug(codeTypeEnum.getLangSlug());
+            question.setContent(CommentUtils.createComment(content, codeTypeEnum, config));
+            FileUtils.overwriteFile(file, VelocityUtils.convert(config.getCustomTemplate(), question));
             FileUtils.openFileEditorAndSaveState(file, project, question, fillPath, true);
-        } else {
-            String content = question.getContent();
-            try{
-                question.setLangSlug(codeTypeEnum.getLangSlug());
-                question.setContent(CommentUtils.createComment(content, codeTypeEnum, config));
-                FileUtils.saveFile(file, VelocityUtils.convert(config.getCustomTemplate(), question));
-                FileUtils.openFileEditorAndSaveState(file, project, question, fillPath, true);
-            }finally {
-                question.setContent(content);
-            }
-
+            refreshQuestionPreview(file, project);
+        } finally {
+            question.setContent(content);
         }
     }
 
@@ -72,12 +74,8 @@ public class CodeManager {
 
         File file = new File(filePath);
         BiConsumer<LeetcodeEditor, String> fillPath = (e, s) -> e.setContentPath(s);
-        if (file.exists()) {
-            FileUtils.openFileEditorAndSaveState(file, project, question, fillPath, isOpen);
-        } else {
-            FileUtils.saveFile(file, question.getContent());
-            FileUtils.openFileEditorAndSaveState(file, project, question, fillPath, isOpen);
-        }
+        FileUtils.overwriteFile(file, question.getContent());
+        FileUtils.openFileEditorAndSaveState(file, project, question, fillPath, isOpen);
     }
 
 
@@ -361,5 +359,23 @@ public class CodeManager {
             }
             MessageUtils.getInstance(project).showWarnMsg("", PropertiesUtils.getInfo("response.timeout"));
         }
+    }
+
+    private static void refreshQuestionPreview(File file, Project project) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            VirtualFile virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file);
+            if (virtualFile == null) {
+                return;
+            }
+            FileEditor[] editors = FileEditorManager.getInstance(project).getEditors(virtualFile);
+            for (FileEditor editor : editors) {
+                if (editor instanceof QuestionEditorWithPreview) {
+                    FileEditor previewEditor = ((QuestionEditorWithPreview) editor).getPreviewEditor();
+                    if (previewEditor instanceof ConvergePreview) {
+                        ((ConvergePreview) previewEditor).refreshTabs();
+                    }
+                }
+            }
+        });
     }
 }

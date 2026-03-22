@@ -101,7 +101,7 @@ public class TopNavigatorTable extends NavigatorTableData<CodeTopQuestionView> {
             @Override
             protected void prepareRenderer(Component component, Object value, int row, int column) {
                 if (component instanceof JLabel) {
-                    if (column == 0 || column == 2 || column == 3 || column == 4) {
+                    if (column == 0 || column == 2 || column == 3) {
                         ((JLabel) component).setHorizontalAlignment(SwingConstants.CENTER);
                     } else {
                         ((JLabel) component).setHorizontalAlignment(SwingConstants.LEADING);
@@ -136,7 +136,7 @@ public class TopNavigatorTable extends NavigatorTableData<CodeTopQuestionView> {
 
     @Override
     protected MyTableModel<CodeTopQuestionView> createMyTableModel() {
-        return new MyTableModel<CodeTopQuestionView>(new String[]{"状态", "标题", "难度", "考察时间", "考察频率"}, new String[]{"S", "Title", "DD", "Time", "F"}) {
+        return new MyTableModel<CodeTopQuestionView>(new String[]{"状态", "标题", "难度", "考察时间"}, new String[]{"S", "Title", "DD", "Time"}) {
             @Override
             public Object getValue(CodeTopQuestionView question, int columnIndex) {
                 if (columnIndex == 0) {
@@ -161,10 +161,6 @@ public class TopNavigatorTable extends NavigatorTableData<CodeTopQuestionView> {
                 if (columnIndex == 3) {
                     return question.getInspectTime();
                 }
-
-                if (columnIndex == 4) {
-                    return question.getInspectFrequency();
-                }
                 return null;
             }
         };
@@ -186,7 +182,6 @@ public class TopNavigatorTable extends NavigatorTableData<CodeTopQuestionView> {
         myJBTable.getColumnModel().getColumn(2).setMaxWidth(70);
         myJBTable.getColumnModel().getColumn(3).setMinWidth(100);
         myJBTable.getColumnModel().getColumn(3).setMaxWidth(120);
-        myJBTable.getColumnModel().getColumn(4).setMaxWidth(60);
     }
 
 

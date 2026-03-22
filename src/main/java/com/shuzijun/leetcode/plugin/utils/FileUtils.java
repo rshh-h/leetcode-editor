@@ -1,6 +1,7 @@
 package com.shuzijun.leetcode.plugin.utils;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
@@ -48,6 +49,46 @@ public class FileUtils {
             fileOutputStream.close();
         } catch (IOException io) {
             LogUtils.LOG.error("保存文件错误", io);
+        }
+    }
+
+    public static void overwriteFile(File file, String body) {
+        if (body == null) {
+            return;
+        }
+
+        final boolean[] updated = {false};
+        Runnable updateDocument = () -> {
+            VirtualFile virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file);
+            if (virtualFile == null) {
+                return;
+            }
+            Document document = FileDocumentManager.getInstance().getDocument(virtualFile);
+            if (document == null) {
+                return;
+            }
+            ApplicationManager.getApplication().runWriteAction(() -> {
+                document.setText(body);
+                FileDocumentManager.getInstance().saveDocument(document);
+            });
+            virtualFile.refresh(false, false);
+            updated[0] = true;
+        };
+
+        if (ApplicationManager.getApplication().isDispatchThread()) {
+            updateDocument.run();
+        } else {
+            ApplicationManager.getApplication().invokeAndWait(updateDocument);
+        }
+
+        if (updated[0]) {
+            return;
+        }
+
+        saveFile(file, body);
+        VirtualFile savedFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file);
+        if (savedFile != null) {
+            savedFile.refresh(false, false);
         }
     }
 

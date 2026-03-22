@@ -20,6 +20,7 @@ import com.shuzijun.leetcode.plugin.editor.ConvergePreview;
 import com.shuzijun.leetcode.plugin.manager.NoteManager;
 import com.shuzijun.leetcode.plugin.model.LeetcodeEditor;
 import com.shuzijun.leetcode.plugin.model.PluginConstant;
+import com.shuzijun.leetcode.plugin.setting.ProjectConfig;
 import com.shuzijun.leetcode.plugin.utils.FileEditorProviderReflection;
 import com.shuzijun.leetcode.plugin.utils.URLUtils;
 import org.jetbrains.annotations.Nls;
@@ -66,10 +67,12 @@ public class NotePreview extends UserDataHolderBase implements FileEditor {
         isLoad = true;
         NotePreview notePreview = this;
         ApplicationManager.getApplication().invokeLater(() -> {
+            myComponent.removeAll();
             JBLabel loadingLabel = new JBLabel("Loading......");
             myComponent.addToCenter(loadingLabel);
             try {
-                File file = ApplicationManager.getApplication().executeOnPooledThread(() -> NoteManager.show(leetcodeEditor.getTitleSlug(), project, false)).get();
+                LeetcodeEditor currentEditor = getCurrentEditor();
+                File file = ApplicationManager.getApplication().executeOnPooledThread(() -> NoteManager.show(currentEditor.getTitleSlug(), project, false, true)).get();
                 if (file == null || !file.exists()) {
                     myComponent.addToCenter(new JBLabel("No note"));
                 } else {
@@ -101,7 +104,7 @@ public class NotePreview extends UserDataHolderBase implements FileEditor {
         ActionToolbar actionToolbar = ActionManager.getInstance().createActionToolbar("Note" + ActionPlaces.TOOLBAR, actionGroup, true);
         actionToolbar.setTargetComponent(targetComponentForActions);
         SplitEditorToolbar splitEditorToolbar = new SplitEditorToolbar(null, actionToolbar);
-        if (URLUtils.leetcodecn.equals(leetcodeEditor.getHost())) {
+        if (URLUtils.leetcodecn.equals(getCurrentEditor().getHost())) {
             splitEditorToolbar.add(new JBLabel("网站已更换新笔记功能,此功能后续同步官网,请备份此版本下的笔记."), 0);
         }
         return splitEditorToolbar;
@@ -139,6 +142,11 @@ public class NotePreview extends UserDataHolderBase implements FileEditor {
                 } else {
                     isLoad = false;
                 }
+            }
+        } else if (state instanceof ConvergePreview.RefreshState) {
+            resetState();
+            if (((ConvergePreview.RefreshState) state).isSelect()) {
+                initComponent();
             }
         }
     }
@@ -182,5 +190,23 @@ public class NotePreview extends UserDataHolderBase implements FileEditor {
         } else {
             return null;
         }
+    }
+
+    private void resetState() {
+        isLoad = false;
+        if (fileEditor != null) {
+            Disposer.dispose(fileEditor);
+            fileEditor = null;
+        }
+        if (myComponent != null) {
+            myComponent.removeAll();
+            myComponent.revalidate();
+            myComponent.repaint();
+        }
+    }
+
+    private LeetcodeEditor getCurrentEditor() {
+        LeetcodeEditor currentEditor = ProjectConfig.getInstance(project).getEditor(leetcodeEditor.getPath());
+        return currentEditor == null ? leetcodeEditor : currentEditor;
     }
 }

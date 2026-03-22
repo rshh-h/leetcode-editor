@@ -20,6 +20,7 @@ import com.shuzijun.leetcode.plugin.editor.SplitFileEditor;
 import com.shuzijun.leetcode.plugin.manager.ArticleManager;
 import com.shuzijun.leetcode.plugin.manager.QuestionManager;
 import com.shuzijun.leetcode.plugin.model.*;
+import com.shuzijun.leetcode.plugin.setting.ProjectConfig;
 import com.shuzijun.leetcode.plugin.utils.FileEditorProviderReflection;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -90,7 +91,8 @@ public class SolutionPreview extends UserDataHolderBase implements FileEditor {
             JBLabel loadingLabel = new JBLabel("Loading......");
             mySplitter.setFirstComponent(loadingLabel);
             try {
-                question = QuestionManager.getQuestionByTitleSlug(leetcodeEditor.getTitleSlug(), project);
+                LeetcodeEditor currentEditor = getCurrentEditor();
+                question = QuestionManager.getQuestionByTitleSlug(currentEditor.getTitleSlug(), project);
 
                 if (question == null || Constant.ARTICLE_LIVE_NONE.equals(question.getArticleLive())) {
                     mySplitter.setFirstComponent(new JBLabel("No question or no solution"));
@@ -268,6 +270,11 @@ public class SolutionPreview extends UserDataHolderBase implements FileEditor {
                 } catch (Exception ignore) {
                 }
             }
+        } else if (state instanceof ConvergePreview.RefreshState) {
+            resetState();
+            if (((ConvergePreview.RefreshState) state).isSelect()) {
+                initComponent(null);
+            }
         }
     }
 
@@ -310,6 +317,27 @@ public class SolutionPreview extends UserDataHolderBase implements FileEditor {
         } else {
             return null;
         }
+    }
+
+    private void resetState() {
+        isLoad = false;
+        question = null;
+        solutionList = null;
+        table = null;
+        myLayout = SplitFileEditor.SplitEditorLayout.FIRST;
+        if (fileEditor != null) {
+            Disposer.dispose(fileEditor);
+            fileEditor = null;
+        }
+        if (mySplitter != null) {
+            mySplitter.setFirstComponent(null);
+            mySplitter.setSecondComponent(null);
+        }
+    }
+
+    private LeetcodeEditor getCurrentEditor() {
+        LeetcodeEditor currentEditor = ProjectConfig.getInstance(project).getEditor(leetcodeEditor.getPath());
+        return currentEditor == null ? leetcodeEditor : currentEditor;
     }
 
 
