@@ -142,12 +142,27 @@ public class HttpRequestUtils {
     }
 
     public static void setCookie(List<HttpCookie> cookieList) {
-        enLcClient.getClient().cookieStore().clearCookie(URLUtils.getLeetcodeHost());
-        enLcClient.getClient().cookieStore().addCookie(URLUtils.getLeetcodeHost(), cookieList);
+        setCookie(URLUtils.getLeetcodeHost(), cookieList);
     }
 
     public static void resetHttpclient() {
-        enLcClient.getClient().cookieStore().clearCookie(URLUtils.getLeetcodeHost());
+        resetHttpclient(URLUtils.getLeetcodeHost());
+    }
+
+    public static void setCookie(String host, List<HttpCookie> cookieList) {
+        getLcClient(host).getClient().cookieStore().clearCookie(host);
+        getLcClient(host).getClient().cookieStore().addCookie(host, cookieList);
+    }
+
+    public static void resetHttpclient(String host) {
+        getLcClient(host).getClient().cookieStore().clearCookie(host);
+    }
+
+    private static LcClient getLcClient(String host) {
+        if (URLUtils.leetcode.equals(host)) {
+            return enLcClient;
+        }
+        return cnLcClient;
     }
 
 
@@ -294,4 +309,3 @@ public class HttpRequestUtils {
         }
     }
 }
-

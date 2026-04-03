@@ -7,6 +7,7 @@ import com.shuzijun.leetcode.plugin.actions.AbstractAction;
 import com.shuzijun.leetcode.plugin.listener.LoginNotifier;
 import com.shuzijun.leetcode.plugin.model.Config;
 import com.shuzijun.leetcode.plugin.model.HttpRequest;
+import com.shuzijun.leetcode.plugin.setting.PersistentConfig;
 import com.shuzijun.leetcode.plugin.utils.*;
 import com.shuzijun.leetcode.plugin.window.NavigatorTabsPanel;
 
@@ -19,6 +20,8 @@ public class LogoutAction extends AbstractAction implements DumbAware {
 
         HttpResponse httpResponse = HttpRequest.builderGet(URLUtils.getLeetcodeLogout()).request();
         HttpRequestUtils.resetHttpclient();
+        config.addCookie(config.getUrl() + config.getLoginName(), null);
+        PersistentConfig.getInstance().setInitConfig(config);
         MessageUtils.getInstance(anActionEvent.getProject()).showInfoMsg("info", PropertiesUtils.getInfo("login.out"));
         NavigatorTabsPanel.loadUser(false);
         ApplicationManager.getApplication().getMessageBus().syncPublisher(LoginNotifier.TOPIC).logout(anActionEvent.getProject(), config.getUrl());

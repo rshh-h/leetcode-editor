@@ -17,7 +17,9 @@ import com.shuzijun.leetcode.plugin.model.Config;
 import com.shuzijun.leetcode.plugin.model.User;
 import com.shuzijun.leetcode.plugin.setting.PersistentConfig;
 import com.shuzijun.leetcode.plugin.setting.StatisticsData;
+import com.shuzijun.leetcode.plugin.utils.CookieUtils;
 import com.shuzijun.leetcode.plugin.utils.DataKeys;
+import com.shuzijun.leetcode.plugin.utils.HttpRequestUtils;
 import com.shuzijun.leetcode.plugin.utils.LogUtils;
 import com.shuzijun.leetcode.plugin.utils.URLUtils;
 import com.shuzijun.leetcode.plugin.window.navigator.AllNavigatorPanel;
@@ -27,6 +29,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,6 +103,7 @@ public class NavigatorTabsPanel extends SimpleToolWindowPanel implements Disposa
         setContent(tabs);
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            restoreLoginState(project);
             User user = getUser();
             if (user.isSignedIn()) {
                 WindowFactory.updateTitle(project, user.getUsername());
@@ -238,6 +242,34 @@ public class NavigatorTabsPanel extends SimpleToolWindowPanel implements Disposa
         Collection<NavigatorTabsPanel> collection = NAVIGATOR_TABS_PANEL_DISPOSABLE_MAP.values();
         for (NavigatorTabsPanel navigatorTabsPanel : collection) {
             navigatorTabsPanel.userCache.put(URLUtils.getLeetcodeHost(), user);
+        }
+    }
+
+    private void restoreLoginState(Project project) {
+        Config config = PersistentConfig.getInstance().getInitConfig();
+        if (config == null) {
+            return;
+        }
+        String cookieValue = config.getCookie(config.getUrl() + config.getLoginName());
+        if (cookieValue == null || cookieValue.isEmpty()) {
+            HttpRequestUtils.resetHttpclient(config.getUrl());
+            return;
+        }
+        try {
+            List<java.net.HttpCookie> cookieList = CookieUtils.toHttpCookie(cookieValue);
+            HttpRequestUtils.setCookie(config.getUrl(), cookieList);
+            if (!HttpRequestUtils.isLogin(project)) {
+                HttpRequestUtils.resetHttpclient(config.getUrl());
+                config.addCookie(config.getUrl() + config.getLoginName(), null);
+                PersistentConfig.getInstance().setInitConfig(config);
+            } else {
+                loadUser(true);
+                ApplicationManager.getApplication().invokeLater(() ->
+                        ApplicationManager.getApplication().getMessageBus().syncPublisher(LoginNotifier.TOPIC).login(project, config.getUrl()));
+            }
+        } catch (Exception e) {
+            LogUtils.LOG.warn("restore login state failed", e);
+            HttpRequestUtils.resetHttpclient(config.getUrl());
         }
     }
 

@@ -39,11 +39,9 @@ public class WindowFactory implements ToolWindowFactory, DumbAware {
             if (!PersistentConfig.getInstance().getInitConfig().getShowToolIcon()) {
                 toolWindow.setIcon(LeetCodeEditorIcons.EMPEROR_NEW_CLOTHES);
             }
-            if (!PersistentConfig.getInstance().getInitConfig().isLeftQuestionEditor()) {
-                toolWindow.setAnchor(ToolWindowAnchor.RIGHT, null);
-            }
-
         }
+        toolWindow.setAnchor(ToolWindowAnchor.LEFT, null);
+        toolWindow.setSplitMode(false, null);
     }
 
 
